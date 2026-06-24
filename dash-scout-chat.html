@@ -340,12 +340,17 @@ async function send() {
       addMsg('ai', `❌ ${d.error?.message || 'Resposta inesperada.'}`);
     } else {
       history.push({role:'model', parts:[{text:reply}]});
-      const jsonMatch = reply.match(/\{[\s\S]*?"chart"\s*:\s*true[\s\S]*?\}/);
+      // Remove markdown code fences do Gemini (```json ... ```)
+      const cleaned = reply.replace(/```json[\s\S]*?```/g, s => s.replace(/```json\s*/,'').replace(/\s*```/,'')).replace(/```/g,'').trim();
+      const jsonMatch = cleaned.match(/\{[\s\S]*"chart"\s*:\s*true[\s\S]*\}/);
       if (jsonMatch) {
-        try { addChart(JSON.parse(jsonMatch[0])); }
-        catch { addMsg('ai', reply.replace(/\n/g,'<br>')); }
+        try {
+          addChart(JSON.parse(jsonMatch[0]));
+        } catch(e2) {
+          addMsg('ai', cleaned.replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>').replace(/\n/g,'<br>'));
+        }
       } else {
-        addMsg('ai', reply
+        addMsg('ai', cleaned
           .replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>')
           .replace(/\n/g,'<br>'));
       }
