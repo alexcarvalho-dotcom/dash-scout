@@ -74,12 +74,13 @@ textarea:focus{border-color:#6c63ff}
 // ── LER PARÂMETROS DA URL (passados pela medida DAX) ─────────────────────────
 const p = new URLSearchParams(window.location.search);
 const g = (k, d) => decodeURIComponent(p.get(k) || d);
+const HARDCODED_KEY = 'COLE_SUA_KEY_AQUI';
 
 const CTX = {
   sala:    g('sala',  'Todas as Salas'),
   mes:     g('mes',   'Período Selecionado'),
   canal:   g('canal', 'Todos os Canais'),
-  key:     g('key',   ''),
+  key:     g('key',   '') || HARDCODED_KEY,
 
   // Vendas
   cap:         g('cap',        '-'),
