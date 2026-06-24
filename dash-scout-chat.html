@@ -106,8 +106,8 @@ const C = {
   dias:  g('dias', ''),
 };
 
-// Parse séries
-const parseSerie = (s) => s && s !== '-' ? s.split(',').map(v => parseInt(v.replace(/\./g,'').replace(/,/g,'')) || 0) : [];
+// Parse séries (valores em milhares vindos da DAX, multiplicar por 1000)
+const parseSerie = (s) => s && s !== '-' ? s.split(',').map(v => (parseInt(v) || 0) * 1000) : [];
 const parseDias  = (s) => s && s !== '-' ? s.split(',') : [];
 const SCAP = parseSerie(C.scap);
 const STGT = parseSerie(C.stgt);
@@ -230,7 +230,7 @@ function addChart(titulo, labels, series, nota) {
         },
         scales: {
           x: { ticks:{color:'#8b8fa8',font:{size:9},maxTicksLimit:8,maxRotation:0}, grid:{color:'rgba(255,255,255,0.04)'} },
-          y: { ticks:{color:'#8b8fa8',font:{size:9}}, grid:{color:'rgba(255,255,255,0.04)'} }
+          y: { ticks:{color:'#8b8fa8',font:{size:9}, callback: function(v){ return (v/1000000).toFixed(1)+'Mi'; }}, grid:{color:'rgba(255,255,255,0.04)'} }
         }
       }
     });
