@@ -37,10 +37,18 @@ textarea:focus{border-color:#6c63ff}
 .dots span{width:5px;height:5px;background:#8b8fa8;border-radius:50%;animation:b .9s infinite}
 .dots span:nth-child(2){animation-delay:.15s}.dots span:nth-child(3){animation-delay:.3s}
 @keyframes b{0%,60%,100%{transform:none}30%{transform:translateY(-5px)}}
+.chart-bubble{background:#1a1d27;border:1px solid rgba(255,255,255,0.08);border-radius:11px;border-top-left-radius:3px;padding:11px;max-width:97%}
+.chart-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:7px}
+.chart-title{font-size:11px;font-weight:600;color:#e8eaf0}
+.chart-close{background:none;border:none;color:#8b8fa8;cursor:pointer;font-size:16px;line-height:1;padding:0 2px}
+.chart-close:hover{color:#e8eaf0}
+.chart-wrap{position:relative;height:160px}
+.chart-note{font-size:11px;color:#8b8fa8;margin-top:6px;line-height:1.4}
+
 </style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 </head>
 <body>
-
 <div class="hdr">
   <div class="dot"></div>
   <span class="htitle">Dash Scout Assistant</span>
@@ -48,9 +56,7 @@ textarea:focus{border-color:#6c63ff}
   <span class="tag" id="tMes">-</span>
   <span class="tag" id="tCanal">-</span>
 </div>
-
 <div class="chat" id="chat"></div>
-
 <div class="sugs" id="sugs">
   <button class="sug" onclick="sug(this)">Quanto tá a captação?</button>
   <button class="sug" onclick="sug(this)">Como está a margem?</button>
@@ -59,136 +65,82 @@ textarea:focus{border-color:#6c63ff}
   <button class="sug" onclick="sug(this)">Como está o faturamento?</button>
   <button class="sug" onclick="sug(this)">Qual o ticket médio?</button>
 </div>
-
 <div class="inpa">
-  <textarea id="inp" placeholder="Pergunte sobre as métricas..." rows="1"
-    onkeydown="hk(event)" oninput="ar(this)"></textarea>
+  <textarea id="inp" placeholder="Pergunte sobre as métricas..." rows="1" onkeydown="hk(event)" oninput="ar(this)"></textarea>
   <button class="sbtn" id="btn" onclick="send()">
     <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
       <line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>
     </svg>
   </button>
 </div>
-
 <script>
-// ── LER PARÂMETROS DA URL (passados pela medida DAX) ─────────────────────────
 const p = new URLSearchParams(window.location.search);
 const g = (k, d) => decodeURIComponent(p.get(k) || d);
-const HARDCODED_KEY = 'COLE_SUA_KEY_AQUI';
 
-const CTX = {
-  sala:    g('sala',  'Todas as Salas'),
-  mes:     g('mes',   'Período Selecionado'),
-  canal:   g('canal', 'Todos os Canais'),
-  key:     g('key',   '') || HARDCODED_KEY,
-
-  // Vendas
-  cap:         g('cap',        '-'),
-  capTGT:      g('captgt',     '-'),
-  capPL:       g('cappl',      '-'),
-  varCapTGT:   g('vcaptgt',    '-'),
-  varCapPL:    g('vcappl',     '-'),
-  varCapLY:    g('vcaply',     '-'),
-  varCapLM:    g('vcaplm',     '-'),
-
-  // Efetivação
-  efe:         g('efe',        '-'),
-  efeTGT:      g('efetgt',     '-'),
-  efePL:       g('efepl',      '-'),
-  varEfeTGT:   g('vefetgt',    '-'),
-  varEfeLY:    g('vefely',     '-'),
-  txEfe:       g('txefe',      '-'),
-  txEfeTGT:    g('txefetgt',   '-'),
-  varTxEfe:    g('vtxefe',     '-'),
-
-  // Faturamento
-  fat:         g('fat',        '-'),
-  fatTGT:      g('fattgt',     '-'),
-  varFatTGT:   g('vfattgt',    '-'),
-  varFatLY:    g('vfatly',     '-'),
-
-  // Indicadores
-  tkt:         g('tkt',        '-'),
-  varTktLY:    g('vtktly',     '-'),
-  varTktLM:    g('vtktlm',     '-'),
-  pmv:         g('pmv',        '-'),
-  varPmvLY:    g('vpmvly',     '-'),
-  ipc:         g('ipc',        '-'),
-  varIpcLY:    g('vipcly',     '-'),
-
-  // Financeiro
-  rob:         g('rob',        '-'),
-  varRobTGT:   g('vrobtgt',    '-'),
-  varRobLY:    g('vrobly',     '-'),
-  rol:         g('rol',        '-'),
-  varRolTGT:   g('vroltgt',    '-'),
-  margem:      g('margem',     '-'),
-  margemTGT:   g('margemtgt',  '-'),
-  varMargTGT:  g('vmargtgt',   '-'),
-  varMargLY:   g('vmargly',    '-'),
-
-  // Volume
-  pedidos:     g('pedidos',    '-'),
-  varPedLY:    g('vpedly',     '-'),
-  sessoes:     g('sessoes',    '-'),
-  varSesLY:    g('vsesly',     '-'),
-  conversao:   g('conv',       '-'),
-
-  // Outros
-  dev:         g('dev',        '-'),
-  varDevLY:    g('vdevly',     '-'),
-  takeRate:    g('tr',         '-'),
-  varTrLY:     g('vtrly',      '-'),
-  cupom:       g('cupom',      '-'),
-  vcorp:       g('vcorp',      '-'),
-  pers:        g('pers',       '-'),
-  gift:        g('gift',       '-'),
+const C = {
+  sala:  g('sala',  'Todas as Salas'),
+  mes:   g('mes',   'Periodo Selecionado'),
+  canal: g('canal', 'Todos os Canais'),
+  key:   g('key',   ''),
+  cap:   g('cap',   '-'), ctgt:  g('ctgt',  '-'), cpl:   g('cpl',  '-'),
+  vct:   g('vct',   '-'), vcp:   g('vcp',   '-'), vcy:   g('vcy',  '-'), vcm:  g('vcm',  '-'),
+  efe:   g('efe',   '-'), etgt:  g('etgt',  '-'), epl:   g('epl',  '-'),
+  vet:   g('vet',   '-'), vey:   g('vey',   '-'),
+  txe:   g('txe',   '-'), txet:  g('txet',  '-'), vtxe:  g('vtxe', '-'),
+  fat:   g('fat',   '-'), ftgt:  g('ftgt',  '-'), vft:   g('vft',  '-'), vfy:  g('vfy',  '-'),
+  tkt:   g('tkt',   '-'), vtly:  g('vtly',  '-'), vtlm:  g('vtlm', '-'),
+  pmv:   g('pmv',   '-'), vpy:   g('vpy',   '-'),
+  ipc:   g('ipc',   '-'), viy:   g('viy',   '-'),
+  rob:   g('rob',   '-'), vrbt:  g('vrbt',  '-'), vrby:  g('vrby', '-'),
+  rol:   g('rol',   '-'), vrlt:  g('vrlt',  '-'),
+  mg:    g('mg',    '-'), mgt:   g('mgt',   '-'), vmt:   g('vmt',  '-'), vmy:  g('vmy',  '-'),
+  ped:   g('ped',   '-'), vpdy:  g('vpdy',  '-'),
+  ses:   g('ses',   '-'), vsy:   g('vsy',   '-'), conv:  g('conv', '-'),
+  dev:   g('dev',   '-'), vdy:   g('vdy',   '-'),
+  tr:    g('tr',    '-'), vtry:  g('vtry',  '-'),
+  cup:   g('cup',   '-'), vco:   g('vco',   '-'), per:   g('per',  '-'), gif:  g('gif',  '-'),
 };
 
-// Preencher tags do header
-document.getElementById('tSala').textContent  = CTX.sala;
-document.getElementById('tMes').textContent   = CTX.mes;
-document.getElementById('tCanal').textContent = CTX.canal;
+document.getElementById('tSala').textContent  = C.sala;
+document.getElementById('tMes').textContent   = C.mes;
+document.getElementById('tCanal').textContent = C.canal;
 
-// ── SYSTEM PROMPT COM DADOS REAIS ────────────────────────────────────────────
+const fmt = (v, suffix='') => v === '-' ? '-' : v + suffix;
+const fmtR = (v) => v === '-' ? '-' : 'R$ ' + Number(v.replace(/,/g,'')).toLocaleString('pt-BR');
+const fmtV = (v, suffix='%') => v === '-' ? '-' : (parseFloat(v) >= 0 ? '+' : '') + v + suffix;
+
 const SYS = `Você é o BI Assistant do Dash Scout, dashboard de vendas da Centauro.
-Responda SEMPRE em português, de forma clara e direta (máximo 3 parágrafos curtos).
-Não use asteriscos nem markdown — texto simples apenas.
+Responda SEMPRE em português, direto e objetivo (máximo 3 parágrafos). Sem asteriscos ou markdown.
 
-CONTEXTO ATUAL: Sala: ${CTX.sala} | Mês: ${CTX.mes} | Canal: ${CTX.canal}
+CONTEXTO: Sala: ${C.sala} | Mês: ${C.mes} | Canal: ${C.canal}
 
-DADOS REAIS DO DASHBOARD AGORA:
-- Captação: ${CTX.cap} | vs TGT: ${CTX.varCapTGT} | vs PL: ${CTX.varCapPL} | vs LY: ${CTX.varCapLY} | vs LM: ${CTX.varCapLM} | Meta TGT: ${CTX.capTGT} | Meta PL: ${CTX.capPL}
-- Efetivação: ${CTX.efe} | vs TGT: ${CTX.varEfeTGT} | vs LY: ${CTX.varEfeLY} | Meta TGT: ${CTX.efeTGT} | Meta PL: ${CTX.efePL}
-- TxEfetivação: ${CTX.txEfe} | Meta TGT: ${CTX.txEfeTGT} | Var vs TGT: ${CTX.varTxEfe}
-- Faturamento: ${CTX.fat} | vs TGT: ${CTX.varFatTGT} | vs LY: ${CTX.varFatLY} | Meta: ${CTX.fatTGT}
-- TKT Médio: ${CTX.tkt} | vs LY: ${CTX.varTktLY} | vs LM: ${CTX.varTktLM}
-- PMV: ${CTX.pmv} | vs LY: ${CTX.varPmvLY}
-- IPC: ${CTX.ipc} | vs LY: ${CTX.varIpcLY}
-- ROB: ${CTX.rob} | vs TGT: ${CTX.varRobTGT} | vs LY: ${CTX.varRobLY}
-- ROL: ${CTX.rol} | vs TGT: ${CTX.varRolTGT}
-- Margem: ${CTX.margem} | Meta TGT: ${CTX.margemTGT} | Var vs TGT: ${CTX.varMargTGT} | Var vs LY: ${CTX.varMargLY}
-- Pedidos: ${CTX.pedidos} | vs LY: ${CTX.varPedLY}
-- Sessões: ${CTX.sessoes} | vs LY: ${CTX.varSesLY} | Conversão: ${CTX.conversao}
-- Devoluções: ${CTX.dev} | vs LY: ${CTX.varDevLY}
-- Take Rate 3P: ${CTX.takeRate} | Var vs LY: ${CTX.varTrLY}
-- Captação Cupom: ${CTX.cupom} | VCorp: ${CTX.vcorp} | Personalização: ${CTX.pers} | Giftback: ${CTX.gift}
+DADOS REAIS (variações em %, pp já como número):
+- Captação: R$ ${C.cap} | Meta TGT: R$ ${C.ctgt} | Meta PL: R$ ${C.cpl} | vs TGT: ${fmtV(C.vct)} | vs PL: ${fmtV(C.vcp)} | vs LY: ${fmtV(C.vcy)} | vs LM: ${fmtV(C.vcm)}
+- Efetivação: R$ ${C.efe} | Meta TGT: R$ ${C.etgt} | Meta PL: R$ ${C.epl} | vs TGT: ${fmtV(C.vet)} | vs LY: ${fmtV(C.vey)}
+- TxEfetivação: ${fmt(C.txe,'%')} | Meta: ${fmt(C.txet,'%')} | Var TGT: ${fmtV(C.vtxe,'pp')}
+- Faturamento: R$ ${C.fat} | Meta TGT: R$ ${C.ftgt} | vs TGT: ${fmtV(C.vft)} | vs LY: ${fmtV(C.vfy)}
+- TKT Médio: R$ ${C.tkt} | vs LY: ${fmtV(C.vtly)} | vs LM: ${fmtV(C.vtlm)}
+- PMV: R$ ${C.pmv} | vs LY: ${fmtV(C.vpy)}
+- IPC: ${C.ipc} | vs LY: ${fmtV(C.viy)}
+- ROB: R$ ${C.rob} | vs TGT: ${fmtV(C.vrbt)} | vs LY: ${fmtV(C.vrby)}
+- ROL: R$ ${C.rol} | vs TGT: ${fmtV(C.vrlt)}
+- Margem: ${fmt(C.mg,'%')} | Meta: ${fmt(C.mgt,'%')} | Var TGT: ${fmtV(C.vmt,'pp')} | Var LY: ${fmtV(C.vmy,'pp')}
+- Pedidos: ${C.ped} | vs LY: ${fmtV(C.vpdy)}
+- Sessões: ${C.ses} | vs LY: ${fmtV(C.vsy)} | Conversão: ${fmt(C.conv,'%')}
+- Devoluções: R$ ${C.dev} | vs LY: ${fmtV(C.vdy)}
+- Take Rate 3P: ${fmt(C.tr,'%')} | Var LY: ${fmtV(C.vtry,'pp')}
+- Captação Cupom: R$ ${C.cup} | VCorp: R$ ${C.vco} | Personalização: R$ ${C.per} | Giftback: R$ ${C.gif}
 
 DEFINIÇÕES:
-Captacao=total vendas captadas (pedidos realizados). Efetivacao=vendas pagas/confirmadas. TxEfetivacao=Efe/Cap (conversão). Faturamento=vendas faturadas canal 1P. TKT_MEDIO=Efe/Pedidos. PMV=Efe/Itens. IPC=Itens/Pedidos. ROB=Receita Operacional Bruta. ROL=ROB menos impostos e devoluções. Margem=LB/ROL. TakeRate=comissão sellers 3P. LY=ano anterior. LM=mês anterior. TGT=target. PL=plano orçamentário. 1P=loja própria. 3P=marketplace. Salas: C, F, O, V.
+Captacao=pedidos realizados. Efetivacao=pedidos pagos. TxEfetivacao=Efe/Cap. Faturamento=vendas faturadas 1P. TKT_MEDIO=Efe/Pedidos. PMV=Efe/Itens. IPC=Itens/Pedidos. ROB=Receita Bruta. ROL=ROB menos impostos. Margem=LB/ROL. TakeRate=comissão 3P. LY=ano anterior. LM=mês anterior. TGT=target. PL=plano. 1P=loja própria. 3P=marketplace.`;
 
-Use os dados reais acima para responder. Se perguntarem sobre valores, use exatamente os números fornecidos.`;
-
-// ── ESTADO ───────────────────────────────────────────────────────────────────
 const history = [];
 let loading = false;
 
-// ── INIT ─────────────────────────────────────────────────────────────────────
 window.addEventListener('load', () => {
-  add('ai', `Olá! Contexto carregado: <strong>${CTX.sala}</strong> · <strong>${CTX.mes}</strong> · <strong>${CTX.canal}</strong>.<br>Pode perguntar sobre qualquer métrica do dashboard!`);
+  add('ai', \`Olá! Contexto carregado: <strong>\${C.sala}</strong> · <strong>\${C.mes}</strong> · <strong>\${C.canal}</strong>.<br>Pode perguntar sobre qualquer métrica!\`);
 });
 
-// ── FUNÇÕES ──────────────────────────────────────────────────────────────────
 function add(role, html) {
   const chat = document.getElementById('chat');
   const d = document.createElement('div');
@@ -217,10 +169,54 @@ function typ() {
   chat.appendChild(d); chat.scrollTop = chat.scrollHeight;
 }
 
+
+const charts = {};
+function addChart(data) {
+  const chat = document.getElementById('chat');
+  const msg = document.createElement('div');
+  msg.className = 'msg';
+  const id = 'c_' + Date.now();
+  const av = document.createElement('div');
+  av.className = 'av avai'; av.textContent = 'DS';
+  const wrap = document.createElement('div');
+  wrap.className = 'chart-bubble';
+  wrap.innerHTML = \`<div class="chart-header"><span class="chart-title">\${data.titulo}</span><button class="chart-close" onclick="removeChart('\${id}',this)">×</button></div><div class="chart-wrap"><canvas id="\${id}"></canvas></div>\${data.comentario ? \`<p class="chart-note">\${data.comentario}</p>\` : ''}\`;
+  msg.appendChild(av); msg.appendChild(wrap);
+  chat.appendChild(msg); chat.scrollTop = chat.scrollHeight;
+  setTimeout(() => {
+    const ctx = document.getElementById(id)?.getContext('2d');
+    if (!ctx) return;
+    charts[id] = new Chart(ctx, {
+      type: 'line',
+      data: { labels: data.labels, datasets: data.series.map(s => ({
+        label: s.label, data: s.data,
+        borderColor: s.cor, backgroundColor: s.cor + '18',
+        borderWidth: s.dashed ? 1.5 : 2, borderDash: s.dashed ? [5,4] : [],
+        pointRadius: 0, pointHoverRadius: 4, tension: 0.4, fill: false
+      }))},
+      options: {
+        responsive: true, maintainAspectRatio: false, animation: { duration: 400 },
+        plugins: {
+          legend: { labels: { color:'#8b8fa8', font:{size:10}, boxWidth:10, padding:8 } },
+          tooltip: { backgroundColor:'#1a1d27', borderColor:'rgba(255,255,255,0.08)', borderWidth:1, titleColor:'#e8eaf0', bodyColor:'#8b8fa8', padding:7 }
+        },
+        scales: {
+          x: { ticks:{color:'#8b8fa8',font:{size:9},maxTicksLimit:8,maxRotation:0}, grid:{color:'rgba(255,255,255,0.04)'} },
+          y: { ticks:{color:'#8b8fa8',font:{size:9}}, grid:{color:'rgba(255,255,255,0.04)'} }
+        }
+      }
+    });
+  }, 50);
+}
+function removeChart(id, btn) {
+  if (charts[id]) { charts[id].destroy(); delete charts[id]; }
+  btn.closest('.msg').remove();
+}
+
 async function send() {
   const el = document.getElementById('inp');
   const txt = el.value.trim();
-  if (!txt || loading || !CTX.key) return;
+  if (!txt || loading || !C.key) return;
   el.value = ''; ar(el);
   document.getElementById('sugs').style.display = 'none';
   loading = true; document.getElementById('btn').disabled = true;
@@ -229,33 +225,23 @@ async function send() {
   typ();
   try {
     const r = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${CTX.key}`,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          system_instruction: { parts: [{ text: SYS }] },
-          contents: history
-        })
-      }
+      \`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=\${C.key}\`,
+      { method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ system_instruction: { parts: [{ text: SYS }] }, contents: history }) }
     );
     const data = await r.json();
     document.getElementById('typ')?.remove();
     const reply = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
-    if (!reply) {
-      add('ai', 'Erro: ' + (data.error?.message || 'resposta vazia'));
-    } else {
+    if (!reply) { add('ai', 'Erro: ' + (data.error?.message || 'resposta vazia')); }
+    else {
       history.push({ role: 'model', parts: [{ text: reply }] });
-      add('ai', reply
-        .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-        .replace(/\n/g, '<br>'));
+      add('ai', reply.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>').replace(/\n/g, '<br>'));
     }
   } catch(e) {
     document.getElementById('typ')?.remove();
-    add('ai', 'Falha na conexão: ' + e.message);
+    add('ai', 'Falha: ' + e.message);
   }
-  loading = false;
-  document.getElementById('btn').disabled = false;
+  loading = false; document.getElementById('btn').disabled = false;
   document.getElementById('inp').focus();
 }
 
