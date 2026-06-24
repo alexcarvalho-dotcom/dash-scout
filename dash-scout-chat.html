@@ -3,102 +3,67 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<style>html { width: 100%; height: 100%; margin: 0; padding: 0; }</style>
-<title>Dash Scout Assistant</title>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <style>
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  :root {
-    --bg: #0f1117; --bg2: #1a1d27; --bg3: #22263a;
-    --border: rgba(255,255,255,0.08); --text: #e8eaf0; --text2: #8b8fa8;
-    --accent: #6c63ff; --accent2: #a78bfa;
-    --green: #34d399; --red: #f87171;
-  }
-  body { background: var(--bg); color: var(--text); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; font-size: 13px; width: 100%; height: 100%; display: flex; flex-direction: column; overflow: hidden; }
-
-  .header { display: flex; align-items: center; gap: 8px; padding: 10px 14px; background: var(--bg2); border-bottom: 1px solid var(--border); flex-shrink: 0; }
-  .dot { width: 7px; height: 7px; background: var(--green); border-radius: 50%; animation: pulse 2s infinite; flex-shrink: 0; }
-  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.35} }
-  .header-info { flex: 1; min-width: 0; }
-  .header-title { font-weight: 600; font-size: 13px; }
-  .ctx-bar { font-size: 11px; color: var(--text2); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .ctx-tag { display: inline-block; background: var(--bg3); border: 1px solid var(--border); border-radius: 4px; padding: 1px 6px; margin-right: 4px; font-size: 10px; color: var(--accent2); }
-
-  .setup { padding: 10px 14px; background: var(--bg2); border-bottom: 1px solid var(--border); display: flex; gap: 8px; }
-  .setup input { flex: 1; padding: 7px 11px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg3); color: var(--text); font-size: 12px; outline: none; transition: border-color .15s; }
-  .setup input:focus { border-color: var(--accent); }
-  .setup button { padding: 7px 14px; border-radius: 8px; border: none; background: var(--accent); color: #fff; font-size: 12px; cursor: pointer; white-space: nowrap; }
-  .setup button:hover { opacity: .85; }
-
-  .chat { flex: 1; overflow-y: auto; padding: 12px 14px; display: flex; flex-direction: column; gap: 10px; scroll-behavior: smooth; }
-  .chat::-webkit-scrollbar { width: 3px; }
-  .chat::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
-
-  .msg { display: flex; gap: 7px; animation: fadeIn .2s ease; }
-  @keyframes fadeIn { from{opacity:0;transform:translateY(4px)} to{opacity:1;transform:none} }
-  .msg.user { flex-direction: row-reverse; }
-  .avatar { width: 24px; height: 24px; border-radius: 50%; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 9px; font-weight: 700; }
-  .avatar.ai { background: linear-gradient(135deg, var(--accent), var(--accent2)); color: #fff; }
-  .avatar.user { background: var(--bg3); color: var(--text2); border: 1px solid var(--border); }
-  .bubble { max-width: 85%; padding: 8px 11px; border-radius: 11px; line-height: 1.55; font-size: 12.5px; }
-  .msg.ai .bubble { background: var(--bg2); border: 1px solid var(--border); border-top-left-radius: 3px; }
-  .msg.user .bubble { background: var(--accent); color: #fff; border-top-right-radius: 3px; }
-
-  .chart-bubble { background: var(--bg2); border: 1px solid var(--border); border-radius: 11px; border-top-left-radius: 3px; padding: 11px; max-width: 95%; }
-  .chart-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 7px; }
-  .chart-title { font-size: 11px; font-weight: 600; color: var(--text); }
-  .chart-close { background: none; border: none; color: var(--text2); cursor: pointer; font-size: 16px; line-height: 1; padding: 0 2px; }
-  .chart-close:hover { color: var(--text); }
-  .chart-wrap { position: relative; height: 160px; }
-  .chart-note { font-size: 11px; color: var(--text2); margin-top: 6px; line-height: 1.4; }
-
-  .dots { display: flex; gap: 4px; align-items: center; }
-  .dots span { width: 5px; height: 5px; background: var(--text2); border-radius: 50%; animation: bounce .9s infinite; }
-  .dots span:nth-child(2){animation-delay:.15s} .dots span:nth-child(3){animation-delay:.3s}
-  @keyframes bounce{0%,60%,100%{transform:none}30%{transform:translateY(-5px)}}
-
-  .sugs { display: flex; flex-wrap: wrap; gap: 5px; padding: 0 14px 8px; }
-  .sug { background: var(--bg3); border: 1px solid var(--border); color: var(--text2); font-size: 11px; padding: 4px 9px; border-radius: 20px; cursor: pointer; transition: all .15s; white-space: nowrap; }
-  .sug:hover { border-color: var(--accent); color: var(--accent2); }
-
-  .input-area { padding: 8px 10px; border-top: 1px solid var(--border); background: var(--bg2); display: flex; gap: 7px; align-items: flex-end; flex-shrink: 0; }
-  textarea { flex: 1; background: var(--bg3); border: 1px solid var(--border); border-radius: 8px; color: var(--text); font-family: inherit; font-size: 12.5px; padding: 7px 11px; resize: none; min-height: 33px; max-height: 85px; outline: none; transition: border-color .15s; line-height: 1.4; }
-  textarea::placeholder { color: var(--text2); }
-  textarea:focus { border-color: var(--accent); }
-  .send { width: 33px; height: 33px; background: var(--accent); border: none; border-radius: 8px; color: #fff; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: opacity .15s; }
-  .send:hover { opacity: .85; }
-  .send:disabled { opacity: .3; cursor: default; }
+*{box-sizing:border-box;margin:0;padding:0}
+html{width:100%;height:100%}
+body{width:100%;height:100%;min-height:100vh;background:#0f1117;color:#e8eaf0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:13px;display:flex;flex-direction:column;overflow:hidden;position:fixed;top:0;left:0;right:0;bottom:0}
+.hdr{display:flex;align-items:center;gap:8px;padding:9px 13px;background:#1a1d27;border-bottom:1px solid rgba(255,255,255,0.08);flex-shrink:0}
+.dot{width:7px;height:7px;background:#34d399;border-radius:50%;animation:pulse 2s infinite;flex-shrink:0}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
+.htitle{font-weight:600;font-size:13px;flex:1;color:#e8eaf0}
+.tag{background:#22263a;border:1px solid rgba(255,255,255,0.08);border-radius:4px;padding:1px 7px;font-size:10px;color:#a78bfa;margin-left:3px}
+.chat{flex:1;overflow-y:auto;padding:11px 13px;display:flex;flex-direction:column;gap:9px;scroll-behavior:smooth}
+.chat::-webkit-scrollbar{width:3px}
+.chat::-webkit-scrollbar-thumb{background:rgba(255,255,255,0.1);border-radius:4px}
+.msg{display:flex;gap:7px;animation:fi .2s ease}
+@keyframes fi{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+.user{flex-direction:row-reverse}
+.av{width:24px;height:24px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700}
+.avai{background:linear-gradient(135deg,#6c63ff,#a78bfa);color:#fff}
+.avuser{background:#22263a;color:#8b8fa8;border:1px solid rgba(255,255,255,0.08)}
+.bub{max-width:85%;padding:8px 11px;border-radius:11px;line-height:1.55;font-size:12.5px}
+.bai{background:#1a1d27;border:1px solid rgba(255,255,255,0.08);border-top-left-radius:3px;color:#e8eaf0}
+.buser{background:#6c63ff;color:#fff;border-top-right-radius:3px}
+.sugs{display:flex;flex-wrap:wrap;gap:5px;padding:0 13px 7px}
+.sug{background:#22263a;border:1px solid rgba(255,255,255,0.08);color:#8b8fa8;font-size:11px;padding:4px 9px;border-radius:20px;cursor:pointer;transition:all .15s;white-space:nowrap}
+.sug:hover{border-color:#6c63ff;color:#a78bfa}
+.inpa{padding:8px 10px;border-top:1px solid rgba(255,255,255,0.08);background:#1a1d27;display:flex;gap:7px;align-items:flex-end;flex-shrink:0}
+textarea{flex:1;background:#22263a;border:1px solid rgba(255,255,255,0.08);border-radius:8px;color:#e8eaf0;font-family:inherit;font-size:12.5px;padding:7px 11px;resize:none;min-height:33px;max-height:80px;outline:none;transition:border-color .15s;line-height:1.4}
+textarea::placeholder{color:#8b8fa8}
+textarea:focus{border-color:#6c63ff}
+.sbtn{width:33px;height:33px;background:#6c63ff;border:none;border-radius:8px;color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:opacity .15s}
+.sbtn:hover{opacity:.85}.sbtn:disabled{opacity:.3;cursor:default}
+.dots{display:flex;gap:4px;align-items:center}
+.dots span{width:5px;height:5px;background:#8b8fa8;border-radius:50%;animation:b .9s infinite}
+.dots span:nth-child(2){animation-delay:.15s}.dots span:nth-child(3){animation-delay:.3s}
+@keyframes b{0%,60%,100%{transform:none}30%{transform:translateY(-5px)}}
 </style>
 </head>
 <body>
 
-<div class="header">
+<div class="hdr">
   <div class="dot"></div>
-  <div class="header-info">
-    <div class="header-title">Dash Scout Assistant</div>
-    <div class="ctx-bar" id="ctxBar">carregando contexto...</div>
-  </div>
-</div>
-
-<div class="setup" id="setup">
-  <input type="password" id="apikey" placeholder="Cole sua Gemini API Key…" />
-  <button onclick="conectar()">Conectar</button>
+  <span class="htitle">Dash Scout Assistant</span>
+  <span class="tag" id="tSala">-</span>
+  <span class="tag" id="tMes">-</span>
+  <span class="tag" id="tCanal">-</span>
 </div>
 
 <div class="chat" id="chat"></div>
 
 <div class="sugs" id="sugs">
-  <button class="sug" onclick="sugerir(this)">📊 Captação vs Target dia a dia</button>
-  <button class="sug" onclick="sugerir(this)">❓ O que é TxEfetivação?</button>
-  <button class="sug" onclick="sugerir(this)">💰 Diferença entre ROB e ROL</button>
-  <button class="sug" onclick="sugerir(this)">📈 Evolução do TKT Médio</button>
-  <button class="sug" onclick="sugerir(this)">🔍 Como é calculada a Margem?</button>
+  <button class="sug" onclick="sug(this)">Quanto tá a captação?</button>
+  <button class="sug" onclick="sug(this)">Como está a margem?</button>
+  <button class="sug" onclick="sug(this)">O que é TxEfetivação?</button>
+  <button class="sug" onclick="sug(this)">Análise geral do período</button>
+  <button class="sug" onclick="sug(this)">Como está o faturamento?</button>
+  <button class="sug" onclick="sug(this)">Qual o ticket médio?</button>
 </div>
 
-<div class="input-area">
-  <textarea id="input" placeholder="Pergunte sobre métricas ou peça um gráfico…" rows="1"
-    onkeydown="handleKey(event)" oninput="autoResize(this)" disabled></textarea>
-  <button class="send" id="sendBtn" onclick="send()" disabled>
+<div class="inpa">
+  <textarea id="inp" placeholder="Pergunte sobre as métricas..." rows="1"
+    onkeydown="hk(event)" oninput="ar(this)"></textarea>
+  <button class="sbtn" id="btn" onclick="send()">
     <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
       <line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>
     </svg>
@@ -106,280 +71,196 @@
 </div>
 
 <script>
-// ─── LER CONTEXTO DA URL (passado pelo Power BI via DAX) ───────────────────
-const params = new URLSearchParams(window.location.search);
+// ── LER PARÂMETROS DA URL (passados pela medida DAX) ─────────────────────────
+const p = new URLSearchParams(window.location.search);
+const g = (k, d) => decodeURIComponent(p.get(k) || d);
+
 const CTX = {
-  sala:  decodeURIComponent(params.get('sala')  || 'Todas as salas'),
-  mes:   decodeURIComponent(params.get('mes')   || 'Período selecionado'),
-  canal: decodeURIComponent(params.get('canal') || 'Todos os canais'),
-  apikey: params.get('key') || ''
+  sala:    g('sala',  'Todas as Salas'),
+  mes:     g('mes',   'Período Selecionado'),
+  canal:   g('canal', 'Todos os Canais'),
+  key:     g('key',   ''),
+
+  // Vendas
+  cap:         g('cap',        '-'),
+  capTGT:      g('captgt',     '-'),
+  capPL:       g('cappl',      '-'),
+  varCapTGT:   g('vcaptgt',    '-'),
+  varCapPL:    g('vcappl',     '-'),
+  varCapLY:    g('vcaply',     '-'),
+  varCapLM:    g('vcaplm',     '-'),
+
+  // Efetivação
+  efe:         g('efe',        '-'),
+  efeTGT:      g('efetgt',     '-'),
+  efePL:       g('efepl',      '-'),
+  varEfeTGT:   g('vefetgt',    '-'),
+  varEfeLY:    g('vefely',     '-'),
+  txEfe:       g('txefe',      '-'),
+  txEfeTGT:    g('txefetgt',   '-'),
+  varTxEfe:    g('vtxefe',     '-'),
+
+  // Faturamento
+  fat:         g('fat',        '-'),
+  fatTGT:      g('fattgt',     '-'),
+  varFatTGT:   g('vfattgt',    '-'),
+  varFatLY:    g('vfatly',     '-'),
+
+  // Indicadores
+  tkt:         g('tkt',        '-'),
+  varTktLY:    g('vtktly',     '-'),
+  varTktLM:    g('vtktlm',     '-'),
+  pmv:         g('pmv',        '-'),
+  varPmvLY:    g('vpmvly',     '-'),
+  ipc:         g('ipc',        '-'),
+  varIpcLY:    g('vipcly',     '-'),
+
+  // Financeiro
+  rob:         g('rob',        '-'),
+  varRobTGT:   g('vrobtgt',    '-'),
+  varRobLY:    g('vrobly',     '-'),
+  rol:         g('rol',        '-'),
+  varRolTGT:   g('vroltgt',    '-'),
+  margem:      g('margem',     '-'),
+  margemTGT:   g('margemtgt',  '-'),
+  varMargTGT:  g('vmargtgt',   '-'),
+  varMargLY:   g('vmargly',    '-'),
+
+  // Volume
+  pedidos:     g('pedidos',    '-'),
+  varPedLY:    g('vpedly',     '-'),
+  sessoes:     g('sessoes',    '-'),
+  varSesLY:    g('vsesly',     '-'),
+  conversao:   g('conv',       '-'),
+
+  // Outros
+  dev:         g('dev',        '-'),
+  varDevLY:    g('vdevly',     '-'),
+  takeRate:    g('tr',         '-'),
+  varTrLY:     g('vtrly',      '-'),
+  cupom:       g('cupom',      '-'),
+  vcorp:       g('vcorp',      '-'),
+  pers:        g('pers',       '-'),
+  gift:        g('gift',       '-'),
 };
 
-// Mostrar contexto no header
-document.getElementById('ctxBar').innerHTML =
-  `<span class="ctx-tag">${CTX.sala}</span><span class="ctx-tag">${CTX.mes}</span><span class="ctx-tag">${CTX.canal}</span>`;
+// Preencher tags do header
+document.getElementById('tSala').textContent  = CTX.sala;
+document.getElementById('tMes').textContent   = CTX.mes;
+document.getElementById('tCanal').textContent = CTX.canal;
 
-// Pré-preencher key se veio na URL
-if (CTX.apikey) {
-  document.getElementById('apikey').value = CTX.apikey;
-}
-
-// ─── SYSTEM PROMPT COM CONTEXTO REAL ─────────────────────────────────────────
-function buildSystem() {
-  return `Você é o BI Assistant do Dash Scout, dashboard de vendas da Centauro.
+// ── SYSTEM PROMPT COM DADOS REAIS ────────────────────────────────────────────
+const SYS = `Você é o BI Assistant do Dash Scout, dashboard de vendas da Centauro.
 Responda SEMPRE em português, de forma clara e direta (máximo 3 parágrafos curtos).
+Não use asteriscos nem markdown — texto simples apenas.
 
-## CONTEXTO ATUAL DO RELATÓRIO
-O usuário está visualizando:
-- Sala: ${CTX.sala}
-- Mês/Período: ${CTX.mes}
-- Canal: ${CTX.canal}
+CONTEXTO ATUAL: Sala: ${CTX.sala} | Mês: ${CTX.mes} | Canal: ${CTX.canal}
 
-Quando o usuário perguntar sobre números ou performance, leve esse contexto em conta.
+DADOS REAIS DO DASHBOARD AGORA:
+- Captação: ${CTX.cap} | vs TGT: ${CTX.varCapTGT} | vs PL: ${CTX.varCapPL} | vs LY: ${CTX.varCapLY} | vs LM: ${CTX.varCapLM} | Meta TGT: ${CTX.capTGT} | Meta PL: ${CTX.capPL}
+- Efetivação: ${CTX.efe} | vs TGT: ${CTX.varEfeTGT} | vs LY: ${CTX.varEfeLY} | Meta TGT: ${CTX.efeTGT} | Meta PL: ${CTX.efePL}
+- TxEfetivação: ${CTX.txEfe} | Meta TGT: ${CTX.txEfeTGT} | Var vs TGT: ${CTX.varTxEfe}
+- Faturamento: ${CTX.fat} | vs TGT: ${CTX.varFatTGT} | vs LY: ${CTX.varFatLY} | Meta: ${CTX.fatTGT}
+- TKT Médio: ${CTX.tkt} | vs LY: ${CTX.varTktLY} | vs LM: ${CTX.varTktLM}
+- PMV: ${CTX.pmv} | vs LY: ${CTX.varPmvLY}
+- IPC: ${CTX.ipc} | vs LY: ${CTX.varIpcLY}
+- ROB: ${CTX.rob} | vs TGT: ${CTX.varRobTGT} | vs LY: ${CTX.varRobLY}
+- ROL: ${CTX.rol} | vs TGT: ${CTX.varRolTGT}
+- Margem: ${CTX.margem} | Meta TGT: ${CTX.margemTGT} | Var vs TGT: ${CTX.varMargTGT} | Var vs LY: ${CTX.varMargLY}
+- Pedidos: ${CTX.pedidos} | vs LY: ${CTX.varPedLY}
+- Sessões: ${CTX.sessoes} | vs LY: ${CTX.varSesLY} | Conversão: ${CTX.conversao}
+- Devoluções: ${CTX.dev} | vs LY: ${CTX.varDevLY}
+- Take Rate 3P: ${CTX.takeRate} | Var vs LY: ${CTX.varTrLY}
+- Captação Cupom: ${CTX.cupom} | VCorp: ${CTX.vcorp} | Personalização: ${CTX.pers} | Giftback: ${CTX.gift}
 
-## MÉTRICAS DO DASH SCOUT
+DEFINIÇÕES:
+Captacao=total vendas captadas (pedidos realizados). Efetivacao=vendas pagas/confirmadas. TxEfetivacao=Efe/Cap (conversão). Faturamento=vendas faturadas canal 1P. TKT_MEDIO=Efe/Pedidos. PMV=Efe/Itens. IPC=Itens/Pedidos. ROB=Receita Operacional Bruta. ROL=ROB menos impostos e devoluções. Margem=LB/ROL. TakeRate=comissão sellers 3P. LY=ano anterior. LM=mês anterior. TGT=target. PL=plano orçamentário. 1P=loja própria. 3P=marketplace. Salas: C, F, O, V.
 
-### VENDAS
-- Captacao: total de vendas captadas (SUM Venda_Captada) — pedidos realizados
-- Efetivacao: vendas efetivadas/pagas (SUM Venda_Efetivada)
-- Faturamento: vendas faturadas canal 1P
-- Pedidos: DISTINCTCOUNT num_pedido onde tipo="V" e pagamento="S"
+Use os dados reais acima para responder. Se perguntarem sobre valores, use exatamente os números fornecidos.`;
 
-### FINANCEIRO
-- ROB (Receita Operacional Bruta): SUM ROB
-- ROL (Receita Operacional Líquida): ROB deduzido de impostos e devoluções
-- LB (Lucro Bruto): SUM LB_Ajustado
-- MargemAJ: LB / ROL
-- TakeRate: ROB 3P / Efetivação 3P — comissão de sellers externos
-
-### INDICADORES
-- TKT_MEDIO (Ticket Médio): Efetivação / Qtd_Pedidos
-- PMV (Preço Médio de Venda): Efetivação / Itens
-- IPC (Itens por Compra): Itens / Qtd_Pedidos
-- TxEfetivacao: Efetivação / Captação — taxa de conversão
-- TxFaturamento: Faturamento 1P / Efetivação 1P
-
-### CANAIS
-- 1P: canal próprio Centauro
-- 3P: marketplace com sellers externos
-
-### SUFIXOS DE COMPARATIVO
-- _LY: Last Year (ano anterior) via DATEADD -1 YEAR
-- _LM: Last Month (mês anterior) via DATEADD -1 MONTH
-- _PL: Plano orçamentário (tabela Metas)
-- _TGT: Target — meta mais agressiva que o plano
-- _3M: média móvel 3 meses via DATESINPERIOD
-
-### VARIAÇÕES
-- %Var_: variação percentual = (atual - anterior) / anterior
-- VarPP_: variação em pontos percentuais (Margem, TxEfetivacao, etc)
-
-### SALAS PRINCIPAIS
-SALA C, SALA F, SALA O, SALA V
-(Excluídas de rankings: SALA X, SALA Z, SALA S, NAO INFORMADO)
-
-### FEATURES
-- Captacao_Cupom: vendas com cupom de desconto
-- Captacao_VCorp: vendas via Venda Corporativa
-- Captacao_Personalizacao: vendas com personalização
-- Captacao_Giftback: vendas com giftback
-- Sessoes / Conversoes / %Conversao: dados de tráfego (Base_Sessoes)
-- Devolucao: SUM Devolucao_Venda[Vlr_Devolucao]
-- Troca: SUM Troca_Venda[Vlr_Troca]
-
-## REGRA PARA GRÁFICOS
-Se pedirem gráfico/visual/chart, responda SOMENTE com JSON (sem texto extra):
-{"chart":true,"tipo":"line","titulo":"Título","labels":["01/06","02/06"...],"series":[{"label":"Nome","data":[...],"cor":"#hex","dashed":false}],"comentario":"insight curto"}
-
-Tipos: "line", "bar", "area"
-Dados simulados realistas: captação em R$ (85000–220000/dia), percentuais em decimal (0.72 = 72%).
-
-## IMPORTANTE
-- Nunca invente medidas inexistentes
-- Se fora do escopo do Dash Scout, diga claramente
-- Seja objetivo e direto`;
-}
-
-// ─── ESTADO ──────────────────────────────────────────────────────────────────
-let API_KEY = '';
-let history = [];
+// ── ESTADO ───────────────────────────────────────────────────────────────────
+const history = [];
 let loading = false;
-let charts = {};
-const DIAS = Array.from({length:30}, (_,i) => `${String(i+1).padStart(2,'0')}/06`);
 
-// ─── INIT ─────────────────────────────────────────────────────────────────────
+// ── INIT ─────────────────────────────────────────────────────────────────────
 window.addEventListener('load', () => {
-  addMsg('ai', `Olá! Estou analisando o contexto:<br><br>
-    📍 <strong>${CTX.sala}</strong> · <strong>${CTX.mes}</strong> · <strong>${CTX.canal}</strong><br><br>
-    Cole sua API Key acima e pode perguntar sobre as métricas ou pedir gráficos!`);
+  add('ai', `Olá! Contexto carregado: <strong>${CTX.sala}</strong> · <strong>${CTX.mes}</strong> · <strong>${CTX.canal}</strong>.<br>Pode perguntar sobre qualquer métrica do dashboard!`);
 });
 
-// ─── CONEXÃO ──────────────────────────────────────────────────────────────────
-function conectar() {
-  const k = document.getElementById('apikey').value.trim();
-  if (!k) return;
-  API_KEY = k;
-  document.getElementById('input').disabled = false;
-  document.getElementById('sendBtn').disabled = false;
-  document.getElementById('input').focus();
-  document.getElementById('setup').style.opacity = '.35';
-  document.getElementById('setup').style.pointerEvents = 'none';
-  addMsg('ai', `✅ Conectado! Contexto carregado: <strong>${CTX.sala}</strong> · <strong>${CTX.mes}</strong> · <strong>${CTX.canal}</strong>. Pode perguntar!`);
-}
-
-// ─── MENSAGENS ────────────────────────────────────────────────────────────────
-function addMsg(role, html) {
+// ── FUNÇÕES ──────────────────────────────────────────────────────────────────
+function add(role, html) {
   const chat = document.getElementById('chat');
-  const div = document.createElement('div');
-  div.className = `msg ${role}`;
-  div.innerHTML = `<div class="avatar ${role}">${role==='ai'?'DS':'VC'}</div><div class="bubble">${html}</div>`;
-  chat.appendChild(div);
-  chat.scrollTop = chat.scrollHeight;
-}
-
-function addTyping() {
-  const chat = document.getElementById('chat');
-  const div = document.createElement('div');
-  div.className = 'msg ai'; div.id = 'typing';
-  div.innerHTML = `<div class="avatar ai">DS</div><div class="bubble"><div class="dots"><span></span><span></span><span></span></div></div>`;
-  chat.appendChild(div);
-  chat.scrollTop = chat.scrollHeight;
-}
-
-function addChart(data) {
-  const chat = document.getElementById('chat');
-  const msg = document.createElement('div');
-  msg.className = 'msg ai';
-  const id = 'c_' + Date.now();
-  const wrap = document.createElement('div');
-  wrap.className = 'chart-bubble';
-  wrap.innerHTML = `
-    <div class="chart-header">
-      <span class="chart-title">${data.titulo}</span>
-      <button class="chart-close" onclick="removeChart('${id}',this)">×</button>
-    </div>
-    <div class="chart-wrap"><canvas id="${id}"></canvas></div>
-    ${data.comentario ? `<p class="chart-note">${data.comentario}</p>` : ''}
-  `;
+  const d = document.createElement('div');
+  d.className = 'msg ' + (role === 'user' ? 'user' : '');
   const av = document.createElement('div');
-  av.className = 'avatar ai'; av.textContent = 'DS';
-  msg.appendChild(av); msg.appendChild(wrap);
-  chat.appendChild(msg);
+  av.className = 'av ' + (role === 'ai' ? 'avai' : 'avuser');
+  av.textContent = role === 'ai' ? 'DS' : 'VC';
+  const bub = document.createElement('div');
+  bub.className = 'bub ' + (role === 'ai' ? 'bai' : 'buser');
+  bub.innerHTML = html;
+  d.appendChild(av); d.appendChild(bub);
+  chat.appendChild(d);
   chat.scrollTop = chat.scrollHeight;
-
-  setTimeout(() => {
-    const ctx = document.getElementById(id)?.getContext('2d');
-    if (!ctx) return;
-    charts[id] = new Chart(ctx, {
-      type: data.tipo === 'bar' ? 'bar' : 'line',
-      data: {
-        labels: data.labels,
-        datasets: data.series.map(s => ({
-          label: s.label, data: s.data,
-          borderColor: s.cor || '#6c63ff',
-          backgroundColor: data.tipo === 'bar' ? (s.cor||'#6c63ff')+'cc' : (s.cor||'#6c63ff')+'18',
-          borderWidth: s.dashed ? 1.5 : 2,
-          borderDash: s.dashed ? [5,4] : [],
-          pointRadius: 0, pointHoverRadius: 4, tension: 0.4,
-          fill: data.tipo === 'area',
-          ...(data.tipo==='bar' ? {borderRadius:3,borderSkipped:false} : {})
-        }))
-      },
-      options: {
-        responsive: true, maintainAspectRatio: false, animation: {duration:400},
-        plugins: {
-          legend: {labels:{color:'#8b8fa8',font:{size:10},boxWidth:10,padding:8}},
-          tooltip: {backgroundColor:'#1a1d27',borderColor:'rgba(255,255,255,0.08)',borderWidth:1,titleColor:'#e8eaf0',bodyColor:'#8b8fa8',padding:7}
-        },
-        scales: {
-          x: {ticks:{color:'#8b8fa8',font:{size:9},maxTicksLimit:8,maxRotation:0},grid:{color:'rgba(255,255,255,0.04)'}},
-          y: {ticks:{color:'#8b8fa8',font:{size:9}},grid:{color:'rgba(255,255,255,0.04)'}}
-        }
-      }
-    });
-  }, 50);
 }
 
-function removeChart(id, btn) {
-  if (charts[id]) { charts[id].destroy(); delete charts[id]; }
-  btn.closest('.msg').remove();
+function typ() {
+  const chat = document.getElementById('chat');
+  const d = document.createElement('div');
+  d.className = 'msg'; d.id = 'typ';
+  const av = document.createElement('div');
+  av.className = 'av avai'; av.textContent = 'DS';
+  const bub = document.createElement('div');
+  bub.className = 'bub bai';
+  bub.innerHTML = '<div class="dots"><span></span><span></span><span></span></div>';
+  d.appendChild(av); d.appendChild(bub);
+  chat.appendChild(d); chat.scrollTop = chat.scrollHeight;
 }
 
-// ─── ENVIO ────────────────────────────────────────────────────────────────────
 async function send() {
-  const input = document.getElementById('input');
-  const text = input.value.trim();
-  if (!text || loading || !API_KEY) return;
-
-  input.value = ''; autoResize(input);
+  const el = document.getElementById('inp');
+  const txt = el.value.trim();
+  if (!txt || loading || !CTX.key) return;
+  el.value = ''; ar(el);
   document.getElementById('sugs').style.display = 'none';
-  loading = true;
-  document.getElementById('sendBtn').disabled = true;
-
-  addMsg('user', text);
-  history.push({role:'user', parts:[{text}]});
-  addTyping();
-
+  loading = true; document.getElementById('btn').disabled = true;
+  add('user', txt);
+  history.push({ role: 'user', parts: [{ text: txt }] });
+  typ();
   try {
     const r = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${API_KEY}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${CTX.key}`,
       {
         method: 'POST',
-        headers: {'Content-Type':'application/json'},
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          system_instruction: {parts:[{text: buildSystem()}]},
+          system_instruction: { parts: [{ text: SYS }] },
           contents: history
         })
       }
     );
-    const d = await r.json();
-    document.getElementById('typing')?.remove();
-
-    const reply = d.candidates?.[0]?.content?.parts?.[0]?.text || '';
+    const data = await r.json();
+    document.getElementById('typ')?.remove();
+    const reply = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
     if (!reply) {
-      addMsg('ai', `❌ ${d.error?.message || 'Resposta inesperada.'}`);
+      add('ai', 'Erro: ' + (data.error?.message || 'resposta vazia'));
     } else {
-      history.push({role:'model', parts:[{text:reply}]});
-      // Remove markdown code fences do Gemini (```json ... ```)
-      const cleaned = reply.replace(/```json[\s\S]*?```/g, s => s.replace(/```json\s*/,'').replace(/\s*```/,'')).replace(/```/g,'').trim();
-      const jsonMatch = cleaned.match(/\{[\s\S]*"chart"\s*:\s*true[\s\S]*\}/);
-      if (jsonMatch) {
-        try {
-          addChart(JSON.parse(jsonMatch[0]));
-        } catch(e2) {
-          addMsg('ai', cleaned.replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>').replace(/\n/g,'<br>'));
-        }
-      } else {
-        addMsg('ai', cleaned
-          .replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>')
-          .replace(/\n/g,'<br>'));
-      }
+      history.push({ role: 'model', parts: [{ text: reply }] });
+      add('ai', reply
+        .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+        .replace(/\n/g, '<br>'));
     }
   } catch(e) {
-    document.getElementById('typing')?.remove();
-    addMsg('ai', `❌ Falha na conexão: ${e.message}`);
+    document.getElementById('typ')?.remove();
+    add('ai', 'Falha na conexão: ' + e.message);
   }
-
   loading = false;
-  document.getElementById('sendBtn').disabled = false;
-  document.getElementById('input').focus();
+  document.getElementById('btn').disabled = false;
+  document.getElementById('inp').focus();
 }
 
-function sugerir(btn) {
-  document.getElementById('input').value = btn.textContent.replace(/^[^\w]+/,'').trim();
-  send();
-}
-function handleKey(e) { if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();send();} }
-function autoResize(el) { el.style.height='auto'; el.style.height=Math.min(el.scrollHeight,85)+'px'; }
-
-function fitToWindow() {
-  const h = window.innerHeight || document.documentElement.clientHeight || 600;
-  const w = window.innerWidth  || document.documentElement.clientWidth  || 400;
-  document.body.style.width  = w + 'px';
-  document.body.style.height = h + 'px';
-}
-fitToWindow();
-window.addEventListener('resize', fitToWindow);
+function sug(b) { document.getElementById('inp').value = b.textContent; send(); }
+function hk(e) { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); } }
+function ar(el) { el.style.height = 'auto'; el.style.height = Math.min(el.scrollHeight, 80) + 'px'; }
 </script>
 </body>
 </html>
